@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Khushi Battle Arena</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; }
+        canvas { background: #567d46; display: block; margin: auto; border: 5px solid #fff; }
+        .stats { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div class="stats">Score: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth * 0.8;
+    canvas.height = window.innerHeight * 0.8;
+
+    let score = 0;
+    const player = { x: canvas.width/2, y: canvas.height/2, size: 20, color: '#3498db', speed: 5 };
+    const enemies = [];
+    const bullets = [];
+
+    // कंट्रोल (Keyboard)
+    const keys = {};
+    window.addEventListener("keydown", e => keys[e.code] = true);
+    window.addEventListener("keyup", e => keys[e.code] = false);
+
+    // शूट करने के लिए माउस क्लिक
+    window.addEventListener("click", e => {
+        const angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
+        bullets.push({ x: player.x, y: player.y, vx: Math.cos(angle)*7, vy: Math.sin(angle)*7 });
+    });
+
+    function spawnEnemy() {
+        enemies.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, size: 15, color: 'red' });
+    }
+    setInterval(spawnEnemy, 2000);
+
+    function update() {
+        if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
+        if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
+        if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
+        if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
+
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if(b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) bullets.splice(i, 1);
+        });
+
+        enemies.forEach((en, ei) => {
+            const dx = player.x - en.x;
+            const dy = player.y - en.y;
+            en.x += dx * 0.01; en.y += dy * 0.01;
+
+            bullets.forEach((b, bi) => {
+                if(Math.hypot(en.x - b.x, en.y - b.y) < en.size) {
+                    enemies.splice(ei, 1); bullets.splice(bi, 1);
+                    score += 10; document.getElementById("score").innerText = score;
+                }
+            });
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // प्लेयर
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x - 10, player.y - 10, player.size, player.size);
+        // गोलियाँ
+        ctx.fillStyle = "yellow";
+        bullets.forEach(b => ctx.beginPath() || ctx.arc(b.x, b.y, 5, 0, Math.PI*2) || ctx.fill());
+        // दुश्मन
+        ctx.fillStyle = "red";
+        enemies.forEach(en => ctx.fillRect(en.x - 7, en.y - 7, en.size, en.size));
+    }
+
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
+    loop();
+</script>
+</body>
+</html>
